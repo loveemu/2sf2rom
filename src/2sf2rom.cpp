@@ -170,7 +170,7 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
 /// @param cmd the name of commmand.
 void show_usage(std::string cmd) {
   std::cout << kApplicationName << " " << kApplicationVersion << std::endl;
-  std::cout << "================================" << std::endl;
+  std::cout << "============================" << std::endl;
   std::cout << std::endl;
 
   std::cout << kApplicationDescription << std::endl;
@@ -181,7 +181,7 @@ void show_usage(std::string cmd) {
   std::cout << "-----" << std::endl;
   std::cout << std::endl;
 
-  std::cout << "`" << cmd << "[options] 2sf-file`" << std::endl;
+  std::cout << "`" << cmd << " [options] 2sf-file`" << std::endl;
   std::cout << std::endl;
 
   std::cout << "### Options" << std::endl;
