@@ -2,6 +2,8 @@
 /// 2SF2ROM: 2SF to NDS ROM Converter.
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <limits.h>
 
 #include <string>
 #include <vector>
@@ -10,6 +12,16 @@
 #include <iostream>
 #include <filesystem>
 #include <stdexcept>
+
+#ifdef WIN32
+#include <Windows.h>
+#include <direct.h>
+#define PATH_MAX MAX_PATH
+#define getcwd _getcwd
+#define chdir _chdir
+#else
+#include <unistd.h>
+#endif
 
 #include <zlib.h>
 #include <zlc/zlibcomplete.hpp>
@@ -57,6 +69,11 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
     throw std::out_of_range(message_buffer.str());
   }
 
+  // save the current directory
+  char pwd[PATH_MAX];
+  getcwd(pwd, PATH_MAX);
+  fs::path psf_path(filename);
+
   // load the psf file
   PSFFile psf(filename);
 
@@ -85,8 +102,20 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
       break;
     }
 
+    // set the current directory to the parent psf directory
+    if (psf_path.has_parent_path()) {
+      chdir(psf_path.parent_path().string().c_str());
+    }
+
     // load the lib
-    load_2sf(psf.tags()[lib_tag_name], rom, lib_nest_level + 1, first_load);
+    try {
+      load_2sf(psf.tags()[lib_tag_name], rom, lib_nest_level + 1, first_load);
+    }
+    catch (std::exception) {
+      chdir(pwd);
+      throw;
+    }
+    chdir(pwd);
     first_load = false;
 
     // check the next lib
@@ -219,7 +248,7 @@ int main(int argc, char * argv[]) {
     std::string filename(argv[argi]);
     if (output_filename.empty()) {
       fs::path path(filename);
-      output_filename = path.replace_extension(".data.bin").string();
+      output_filename = path.filename().replace_extension(".data.bin").string();
     }
 
     // load rom image

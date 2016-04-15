@@ -40,6 +40,11 @@ PSFFile::PSFFile() :
 /// Open Portable Sound Format from a file.
 PSFFile::PSFFile(const std::string & filename) {
   // get input file size
+  if (!fs::exists(filename)) {
+    std::ostringstream message_buffer;
+    message_buffer << filename << ": " << "File not exists.";
+    throw std::runtime_error(message_buffer.str());
+  }
   std::uintmax_t psf_size = fs::file_size(filename);
 
   // open input file
