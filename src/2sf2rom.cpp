@@ -13,7 +13,7 @@
 #include <filesystem>
 #include <stdexcept>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
 #define PATH_MAX MAX_PATH
