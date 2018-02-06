@@ -10,7 +10,6 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 #include <stdexcept>
 
 #ifdef _WIN32
@@ -28,8 +27,7 @@
 #include "byteio.hpp"
 #include "psf_file.hpp"
 #include "ZlibReader.h"
-
-namespace fs = std::experimental::filesystem;
+#include "cpath.h"
 
 namespace {
 
@@ -72,7 +70,19 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
   // save the current directory
   char pwd[PATH_MAX];
   getcwd(pwd, PATH_MAX);
-  fs::path psf_path(filename);
+
+  // get the absolute path
+  char absolute_path[PATH_MAX];
+  if (path_getabspath(filename.c_str(), absolute_path) == NULL) {
+    std::ostringstream message_buffer;
+    message_buffer << filename << ": " << "Unable to determine absolute path.";
+    throw std::out_of_range(message_buffer.str());
+  }
+
+  // get the directory path
+  char basedir[PATH_MAX];
+  strcpy(basedir, absolute_path);
+  path_dirname(basedir);
 
   // load the psf file
   PSFFile psf(filename);
@@ -103,9 +113,7 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
     }
 
     // set the current directory to the parent psf directory
-    if (psf_path.has_parent_path()) {
-      chdir(psf_path.parent_path().string().c_str());
-    }
+    chdir(basedir);
 
     // load the lib
     try {
@@ -243,8 +251,9 @@ int main(int argc, char * argv[]) {
     // determine filenames
     std::string filename(argv[argi]);
     if (output_filename.empty()) {
-      fs::path path(filename);
-      output_filename = path.filename().replace_extension(".data.bin").string();
+      const char * filename_c = filename.c_str();
+      off_t ext = path_findext(filename_c) - filename_c;
+      output_filename = filename.substr(0, ext) + ".data.bin";
     }
 
     // load rom image

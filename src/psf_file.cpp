@@ -9,12 +9,10 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include <filesystem>
 
 #include "byteio.hpp"
 #include "psf_file.hpp"
-
-namespace fs = std::experimental::filesystem;
+#include "cpath.h"
 
 namespace {
 
@@ -40,12 +38,13 @@ PSFFile::PSFFile() :
 /// Open Portable Sound Format from a file.
 PSFFile::PSFFile(const std::string & filename) {
   // get input file size
-  if (!fs::exists(filename)) {
+  off_t filesize = path_getfilesize(filename.c_str());
+  if (filesize == -1) {
     std::ostringstream message_buffer;
     message_buffer << filename << ": " << "File not exists.";
     throw std::runtime_error(message_buffer.str());
   }
-  std::uintmax_t psf_size = fs::file_size(filename);
+  std::uintmax_t psf_size = static_cast<std::uintmax_t>(filesize);
 
   // open input file
   std::ifstream in;
@@ -201,7 +200,7 @@ PSFFile::PSFFile(const std::string & filename) {
         //   comment=multiple-line
         //   comment=comment.
         // Therefore, check if the variable had already appeared.
-        std::unordered_map<std::string, std::string>::iterator it = tags.lower_bound(key);
+        std::unordered_map<std::string, std::string>::iterator it = tags.find(key);
         if (it != tags.end() && it->first == key) {
           it->second += "\n";
           it->second += value;
