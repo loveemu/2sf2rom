@@ -24,10 +24,10 @@
 #endif
 
 #include <zlib.h>
-#include <zlc/zlibcomplete.hpp>
 
 #include "byteio.hpp"
 #include "psf_file.hpp"
+#include "ZlibReader.h"
 
 namespace fs = std::experimental::filesystem;
 
@@ -122,23 +122,20 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
     lib_index++;
   }
 
-  // decompress the program area
-  zlibcomplete::ZLibDecompressor inflater;
-  std::string exe = inflater.decompress(psf.compressed_exe());
-  if (exe.size() < 8) {
+  // read the exe header
+  // - 4 bytes offset
+  // - 4 bytes size
+  ZlibReader compressed_exe(psf.compressed_exe().c_str(), psf.compressed_exe().size());
+  uint32_t load_offset;
+  uint32_t load_size;
+  bool read_success = true;
+  read_success &= compressed_exe.readInt(load_offset);
+  read_success &= compressed_exe.readInt(load_size);
+  if (!read_success) {
     std::ostringstream message_buffer;
     message_buffer << filename << ": " << "Unable to read the program header.";
     throw std::runtime_error(message_buffer.str());
   }
-
-  // read the exe header
-  // - 4 bytes offset
-  // - 4 bytes size
-  auto exe_iter = exe.cbegin();
-  uint32_t load_offset;
-  exe_iter = ReadInt32L(exe_iter, load_offset);
-  uint32_t load_size;
-  exe_iter = ReadInt32L(exe_iter, load_size);
 
   // ensure the rom buffer size
   if (load_offset + load_size > kNDSRomMaxSize) {
@@ -157,13 +154,12 @@ void load_2sf(const std::string & filename, std::vector<char> & rom, int lib_nes
     }
   }
 
-  // copy the program
-  if (exe.size() < 8 + load_size) {
+  // decompress the program area
+  if (compressed_exe.read(&rom[load_offset], load_size) != load_size) {
     std::ostringstream message_buffer;
-    message_buffer << filename << ": " << "Program data is corrupted.";
+    message_buffer << filename << ": " << "Failed to deflate data. Program data is corrupted.";
     throw std::out_of_range(message_buffer.str());
   }
-  std::copy(exe_iter, std::next(exe_iter, load_size), std::next(std::begin(rom), load_offset));
 }
 
 /// Show usage of 2SF2ROM.
