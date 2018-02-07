@@ -36,7 +36,7 @@ after_build:
   - ps: $env:gitrev = git describe --tags
   - ps: $env:my_version = "$env:gitrev"
   - set package_name=2sf2rom-%my_version%-%arch%
-  - copy build\%config%\2sf2rom.exe .
+  - copy "build\%config%\2sf2rom.exe" .
   - 7z a %package_name%.zip 2sf2rom.exe README.md LICENSE
 
 artifacts:
