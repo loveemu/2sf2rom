@@ -51,7 +51,14 @@ set(SRCS
     src/ZlibReader.cpp
 )
 
-add_executable(2sf2rom ${SRCS})
+set(HDRS
+    src/byteio.hpp
+    src/cpath.h
+    src/psf_file.hpp
+    src/ZlibReader.h
+)
+
+add_executable(2sf2rom ${SRCS} ${HDRS})
 
 if(ZLIB_FOUND)
     include_directories(${ZLIB_INCLUDE_DIRS})
